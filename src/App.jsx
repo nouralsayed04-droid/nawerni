@@ -27,7 +27,13 @@ export default function App() {
         />
       )}
       {page === "signup" && (
-        <Signup onNavigateToLogin={() => setPage("login")} />
+        <Signup
+          onNavigateToLogin={() => setPage("login")}
+          onLoginSuccess={(username) => {
+            setCurrentUser(username || "");
+            setPage("dashboard");
+          }}
+        />
       )}
       {page === "dashboard" && (
         <Dashboard
