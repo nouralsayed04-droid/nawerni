@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { signOut } from "firebase/auth";
+import { auth } from "./firebase";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
@@ -14,6 +16,38 @@ export default function App() {
     return localStorage.getItem("nawerni_loggedInUser") ||
            sessionStorage.getItem("nawerni_loggedInUser") || "";
   });
+
+  const handleLogout = () => {
+    localStorage.removeItem("nawerni_loggedInUser");
+    sessionStorage.removeItem("nawerni_loggedInUser");
+    signOut(auth);
+    setCurrentUser("");
+    setPage("login");
+  };
+
+  // ✅ Auto-logout after 5 minutes of inactivity
+  useEffect(() => {
+    if (page !== "dashboard") return;
+
+    let timer;
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        handleLogout();
+      }, 5 * 60 * 1000); // 5 minutes
+    };
+
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [page]);
 
   return (
     <>
@@ -38,12 +72,7 @@ export default function App() {
       {page === "dashboard" && (
         <Dashboard
           username={currentUser}
-          onLogout={() => {
-            localStorage.removeItem("nawerni_loggedInUser");
-            sessionStorage.removeItem("nawerni_loggedInUser");
-            setCurrentUser("");
-            setPage("login");
-          }}
+          onLogout={handleLogout}
         />
       )}
     </>
