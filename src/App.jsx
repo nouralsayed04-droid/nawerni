@@ -3,12 +3,17 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 
-const savedUser = localStorage.getItem("nawerni_loggedInUser") ||
-                  sessionStorage.getItem("nawerni_loggedInUser") || "";
-
 export default function App() {
-  const [page, setPage] = useState(savedUser ? "dashboard" : "login");
-  const [currentUser, setCurrentUser] = useState(savedUser);
+  const [page, setPage] = useState(() => {
+    const saved = localStorage.getItem("nawerni_loggedInUser") ||
+                  sessionStorage.getItem("nawerni_loggedInUser");
+    return saved ? "dashboard" : "login";
+  });
+
+  const [currentUser, setCurrentUser] = useState(() => {
+    return localStorage.getItem("nawerni_loggedInUser") ||
+           sessionStorage.getItem("nawerni_loggedInUser") || "";
+  });
 
   return (
     <>
