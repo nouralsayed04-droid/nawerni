@@ -236,3 +236,8 @@ const styles = {
   link: { color: "#4a6741", fontWeight: "600", cursor: "pointer", textDecoration: "underline" },
   forgot: { color: "#999", fontStyle: "italic", cursor: "pointer" },
 };
+const savedUser = localStorage.getItem("nawerni_loggedInUser") || 
+                  sessionStorage.getItem("nawerni_loggedInUser");
+
+const [page, setPage] = useState(savedUser ? "dashboard" : "login");
+const [currentUser, setCurrentUser] = useState(savedUser || "");

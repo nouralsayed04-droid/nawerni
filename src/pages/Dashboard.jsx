@@ -167,12 +167,12 @@ function getCategoryEmoji(category) {
   return "📦";
 }
 
-// ✅ FIXED: now calls your backend instead of Anthropic directly
 async function fetchAISuggestion(item, daysLeft, lang, allergies) {
-  const allergyNote = allergies.length > 0
+  const safeAllergies = Array.isArray(allergies) ? allergies : [];
+  const allergyNote = safeAllergies.length > 0
     ? (lang === "ar"
-        ? ` مهم: المستخدم لديه حساسية من: ${allergies.join("، ")}. لا تذكر أي وصفة تحتوي على هذه المكونات.`
-        : ` Important: the user is allergic to: ${allergies.join(", ")}. Do NOT suggest any recipe or tip that includes these ingredients.`)
+        ? ` مهم: المستخدم لديه حساسية من: ${safeAllergies.join("، ")}. لا تذكر أي وصفة تحتوي على هذه المكونات.`
+        : ` Important: the user is allergic to: ${safeAllergies.join(", ")}. Do NOT suggest any recipe or tip that includes these ingredients.`)
     : "";
 
   const prompt = lang === "ar"
@@ -192,14 +192,25 @@ async function fetchAISuggestion(item, daysLeft, lang, allergies) {
 export default function Dashboard({ username, onLogout }) {
   const [lang, setLang] = useState("en");
   const [activeTab, setActiveTab] = useState("Dashboard");
+
+  // ✅ FIX 1: Safe localStorage reads with try/catch
   const [items, setItems] = useState(() => {
-    const saved = localStorage.getItem("nawerni_items");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("nawerni_items");
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
   });
+
+  // ✅ FIX 2: Safe localStorage reads with try/catch
   const [allergies, setAllergies] = useState(() => {
-    const saved = localStorage.getItem("nawerni_allergies");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("nawerni_allergies");
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
   });
+
   const [allergyInput, setAllergyInput] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -422,7 +433,6 @@ export default function Dashboard({ username, onLogout }) {
               {statCard(t.other, otherItems.length)}
             </div>
 
-            {/* ALLERGY REMINDER BANNER */}
             {allergies.length > 0 && (
               <div style={{ background: "#fbeaf0", border: "1px solid #f4c0d1", borderRadius: "12px", padding: "10px 14px", marginBottom: "14px", display: "flex", alignItems: "flex-start", gap: "8px" }}>
                 <span style={{ fontSize: "16px", marginTop: "1px" }}>🛡️</span>
@@ -437,7 +447,6 @@ export default function Dashboard({ username, onLogout }) {
               </div>
             )}
 
-            {/* AI SUGGESTIONS */}
             {notifications.length > 0 && (
               <div style={{ marginBottom: "16px" }}>
                 <div style={{ fontSize: "15px", fontWeight: "600", color: "#333", margin: "18px 0 10px", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -636,7 +645,6 @@ export default function Dashboard({ username, onLogout }) {
           <div>
             <h2 style={{ fontSize: isSmall ? "17px" : "20px", fontWeight: "700", color: "#3a5535", marginBottom: "4px" }}>{t.allergyTitle}</h2>
             <p style={{ fontSize: "13px", color: "#888", marginBottom: "18px", lineHeight: "1.6" }}>{t.allergySubtitle}</p>
-
             <div style={{ background: "#fff", borderRadius: "14px", padding: "16px", marginBottom: "14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
@@ -647,40 +655,23 @@ export default function Dashboard({ username, onLogout }) {
                   placeholder={t.allergyPlaceholder}
                   style={{ flex: 1, padding: "10px 14px", border: "1.5px solid #d0d0cc", borderRadius: "10px", fontSize: "14px", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
                 />
-                <button
-                  onClick={addAllergy}
-                  style={{ background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px", cursor: "pointer", fontSize: "14px", fontWeight: "600", whiteSpace: "nowrap", fontFamily: "inherit" }}
-                >
+                <button onClick={addAllergy} style={{ background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px", cursor: "pointer", fontSize: "14px", fontWeight: "600", whiteSpace: "nowrap", fontFamily: "inherit" }}>
                   + {t.addAllergy}
                 </button>
               </div>
-
               <div style={{ marginTop: "14px" }}>
                 <div style={{ fontSize: "12px", color: "#aaa", marginBottom: "8px" }}>{t.commonAllergies}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {COMMON_ALLERGIES.map((a) => (
-                    <button
-                      key={a}
-                      onClick={() => toggleCommonAllergy(a)}
-                      style={{
-                        background: allergies.includes(a) ? "#3a5535" : "#f0f0ee",
-                        color: allergies.includes(a) ? "#fff" : "#555",
-                        border: "none", borderRadius: "999px",
-                        padding: "5px 12px", fontSize: "12px", fontWeight: "600",
-                        cursor: "pointer", fontFamily: "inherit",
-                      }}
-                    >
+                    <button key={a} onClick={() => toggleCommonAllergy(a)} style={{ background: allergies.includes(a) ? "#3a5535" : "#f0f0ee", color: allergies.includes(a) ? "#fff" : "#555", border: "none", borderRadius: "999px", padding: "5px 12px", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "inherit" }}>
                       {allergies.includes(a) ? "✓ " : "+ "}{a}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
-
             <div style={{ background: "#fff", borderRadius: "14px", padding: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: "#3a5535", marginBottom: "12px" }}>
-                🛡️ {t.allergyTitle} ({allergies.length})
-              </div>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: "#3a5535", marginBottom: "12px" }}>🛡️ {t.allergyTitle} ({allergies.length})</div>
               {allergies.length === 0 ? (
                 <div style={{ fontSize: "13px", color: "#aaa", textAlign: "center", padding: "16px 0" }}>{t.noAllergies}</div>
               ) : (
@@ -696,9 +687,7 @@ export default function Dashboard({ username, onLogout }) {
                   ))}
                 </div>
               )}
-              <div style={{ marginTop: "14px", fontSize: "12px", color: "#aaa", lineHeight: "1.6", borderTop: "0.5px solid #f0f0ee", paddingTop: "12px" }}>
-                ℹ️ {t.allergyNote}
-              </div>
+              <div style={{ marginTop: "14px", fontSize: "12px", color: "#aaa", lineHeight: "1.6", borderTop: "0.5px solid #f0f0ee", paddingTop: "12px" }}>ℹ️ {t.allergyNote}</div>
             </div>
           </div>
         )}
