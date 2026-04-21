@@ -1,3 +1,5 @@
+
+
 export default function Donations() {
   const centers = [
     { name: '🏪 Saudi Food Bank', dist: '1.2 km away', addr: 'King Fahd Road, Riyadh', accepts: 'Food items only', lat: 24.7136, lng: 46.6753 },

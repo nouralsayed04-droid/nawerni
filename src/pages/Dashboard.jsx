@@ -1,3 +1,6 @@
+
+
+
 import { useState, useEffect, useRef } from "react";
 
 const TABS = ["Dashboard", "Inventory", "Scan", "Donate", "Allergy", "Analytics"];
@@ -130,13 +133,13 @@ const TRANSLATIONS = {
 const COMMON_ALLERGIES = ["Peanuts", "Tree nuts", "Milk", "Eggs", "Wheat", "Soy", "Fish", "Shellfish", "Sesame", "Gluten"];
 
 const DONATION_CENTERS = [
-  { name: "Saudi Food Bank", nameAr: "بنك الطعام السعودي", city: "Riyadh", lat: 24.7136, lng: 46.6753, phone: "966920008110" },
-  { name: "King Salman Humanitarian Aid", nameAr: "مركز الملك سلمان للإغاثة", city: "Riyadh", lat: 24.6877, lng: 46.7219, phone: "966920000052" },
-  { name: "Ehsan Charity Platform", nameAr: "منصة إحسان الخيرية", city: "Riyadh", lat: 24.7241, lng: 46.6916, phone: "9668001247000" },
-  { name: "Al-Birr Society", nameAr: "جمعية البر", city: "Jeddah", lat: 21.4858, lng: 39.1925, phone: "966164210122" },
-  { name: "Manahil Charity", nameAr: "جمعية منابع الخيرية", city: "Dammam", lat: 26.4207, lng: 50.0888, phone: "966920008110" },
-  { name: "Riyadh Food Bank", nameAr: "بنك طعام الرياض", city: "Riyadh", lat: 24.6541, lng: 46.7198, phone: "966920008110" },
-  { name: "Jeddah Charity Center", nameAr: "مركز جدة الخيري", city: "Jeddah", lat: 21.5433, lng: 39.1728, phone: "966164210122" },
+  { name: "Saudi Food Bank", nameAr: "بنك الطعام السعودي", city: "Riyadh", lat: 24.7136, lng: 46.6753 },
+  { name: "King Salman Humanitarian Aid", nameAr: "مركز الملك سلمان للإغاثة", city: "Riyadh", lat: 24.6877, lng: 46.7219 },
+  { name: "Ehsan Charity Platform", nameAr: "منصة إحسان الخيرية", city: "Riyadh", lat: 24.7241, lng: 46.6916 },
+  { name: "Al-Birr Society", nameAr: "جمعية البر", city: "Jeddah", lat: 21.4858, lng: 39.1925 },
+  { name: "Manahil Charity", nameAr: "جمعية منابع الخيرية", city: "Dammam", lat: 26.4207, lng: 50.0888 },
+  { name: "Riyadh Food Bank", nameAr: "بنك طعام الرياض", city: "Riyadh", lat: 24.6541, lng: 46.7198 },
+  { name: "Jeddah Charity Center", nameAr: "مركز جدة الخيري", city: "Jeddah", lat: 21.5433, lng: 39.1728 },
 ];
 
 function getDaysUntilExpiry(expiryDate) {
@@ -193,6 +196,7 @@ export default function Dashboard({ username, onLogout }) {
   const [lang, setLang] = useState("en");
   const [activeTab, setActiveTab] = useState("Dashboard");
 
+  // ✅ FIX 1: Safe localStorage reads with try/catch
   const [items, setItems] = useState(() => {
     try {
       const saved = localStorage.getItem("nawerni_items");
@@ -201,6 +205,7 @@ export default function Dashboard({ username, onLogout }) {
     } catch { return []; }
   });
 
+  // ✅ FIX 2: Safe localStorage reads with try/catch
   const [allergies, setAllergies] = useState(() => {
     try {
       const saved = localStorage.getItem("nawerni_allergies");
@@ -628,23 +633,9 @@ export default function Dashboard({ username, onLogout }) {
                         {dist && <span style={{ color: "#3a5535", fontWeight: "600" }}>· {dist} {t.km}</span>}
                       </div>
                     </div>
-                    {/* ✅ Buttons: Maps, WhatsApp, Call */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
-                      <button style={{ background: "#e8f5e9", color: "#2d6a2d", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }} onClick={() => openMaps(center.lat, center.lng, center.name)}>
-                        🗺 {t.openMaps}
-                      </button>
-                      <button style={{ background: "#25D366", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }}
-                        onClick={() => {
-                          const msg = encodeURIComponent(`Hello, I would like to donate some items to ${center.name}. Could you please let me know what you currently accept and how many items I can bring?`);
-                          window.open(`https://wa.me/${center.phone}?text=${msg}`, "_blank");
-                        }}>
-                        💬 WhatsApp
-                      </button>
-                      <button style={{ background: "#4a6741", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }}
-                        onClick={() => { window.location.href = `tel:+${center.phone}`; }}>
-                        📞 Call
-                      </button>
-                    </div>
+                    <button style={{ background: "#e8f5e9", color: "#2d6a2d", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }} onClick={() => openMaps(center.lat, center.lng, center.name)}>
+                      🗺 {t.openMaps}
+                    </button>
                   </div>
                 </div>
               );
