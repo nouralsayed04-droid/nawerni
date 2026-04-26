@@ -1,133 +1,91 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 export default function Scanner({ addItem, setPage }) {
   const [name, setName] = useState('');
   const [cat, setCat] = useState('food');
   const [expiry, setExpiry] = useState('');
   const [qty, setQty] = useState(1);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState('');
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
+  const [scanPreview, setScanPreview] = useState(null);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
 
-  const startCamera = async () => {
-    setCameraError('');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } }
-      });
-      streamRef.current = stream;
-      setCameraActive(true);
-    } catch (err) {
-      if (err.name === 'NotAllowedError') {
-        setCameraError('Camera permission denied. Please allow camera access.');
-      } else if (err.name === 'NotFoundError') {
-        setCameraError('No camera found on this device.');
-      } else {
-        setCameraError('Could not open camera: ' + err.message);
+  const handleCapture = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64Full = ev.target.result;
+      setScanPreview(base64Full);
+      const base64Data = base64Full.split(",")[1];
+      const mediaType = file.type || "image/jpeg";
+
+      setScanLoading(true);
+      setScanResult(null);
+
+      try {
+        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3001";
+        const res = await fetch(`${apiBase}/api/scan`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: base64Data, mediaType })
+        });
+        const data = await res.json();
+        setScanResult(data);
+        if (data.productName) setName(data.productName);
+        if (data.expiryDate) setExpiry(data.expiryDate);
+      } catch {
+        setScanResult({ productName: "", expiryDate: "", barcode: "" });
       }
-    }
-  };
-
-  // Attach stream to video element after cameraActive is true and videoRef is rendered
-  useEffect(() => {
-    if (cameraActive && videoRef.current && streamRef.current) {
-      videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(err => {
-        setCameraError('Could not play video: ' + err.message);
-      });
-    }
-  }, [cameraActive]);
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setCameraActive(false);
-  };
-
-  useEffect(() => {
-    return () => stopCamera();
-  }, []);
-
-  const simulate = () => {
-    stopCamera();
-    const samples = ['Milk', 'Paracetamol', 'Rice', 'Vitamin C', 'Yogurt'];
-    const cats = ['food', 'medicine', 'food', 'medicine', 'food'];
-    const idx = Math.floor(Math.random() * samples.length);
-    const d = new Date();
-    d.setDate(d.getDate() + Math.floor(Math.random() * 30) + 5);
-    setName(samples[idx]);
-    setCat(cats[idx]);
-    setExpiry(d.toISOString().split('T')[0]);
-    setQty(1);
+      setScanLoading(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const submit = () => {
     if (!name || !expiry) { alert('Please fill name and expiry date'); return; }
-    stopCamera();
     addItem({ name, cat, expiry, qty: parseInt(qty) });
     setName(''); setExpiry(''); setQty(1);
+    setScanPreview(null); setScanResult(null);
     setPage('inventory');
   };
 
   return (
     <div>
-      {/* Camera Box */}
-      <div style={{
-        background: '#1a1a1a',
-        borderRadius: '12px',
-        height: '240px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: '12px',
-        overflow: 'hidden',
-        position: 'relative'
-      }}>
-        {/* Always render video, just hide it when not active */}
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          autoPlay
-          style={{
-            display: cameraActive ? 'block' : 'none',
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
-        />
-
-        {!cameraActive && (
+      {/* Camera Preview Box */}
+      <div style={{ background: '#1a1a1a', borderRadius: '12px', height: '240px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '12px', overflow: 'hidden', position: 'relative' }}>
+        {scanPreview ? (
+          <img src={scanPreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
           <div style={{ color: 'white', fontSize: '13px', textAlign: 'center' }}>
             <div style={{ fontSize: '40px', marginBottom: '8px' }}>📷</div>
-            {cameraError
-              ? <div style={{ color: '#ff8080', fontSize: '12px', padding: '0 16px' }}>{cameraError}</div>
-              : <div>Tap below to open camera</div>
-            }
+            <div>Tap below to open camera</div>
           </div>
         )}
       </div>
 
-      {/* Camera Controls */}
-      {!cameraActive ? (
-        <button className="submit-btn" onClick={startCamera} style={{ marginBottom: '8px' }}>
-          📷 Open Camera
-        </button>
-      ) : (
-        <button className="submit-btn" onClick={stopCamera} style={{ marginBottom: '8px', background: '#c0392b' }}>
-          ✕ Close Camera
-        </button>
+      {/* Scanning status */}
+      {scanLoading && (
+        <div style={{ background: '#e8f5e9', borderRadius: '10px', padding: '12px 16px', marginBottom: '12px', textAlign: 'center', fontSize: '14px', color: '#2d6a2d', fontWeight: '600' }}>
+          🤖 Reading product info...
+        </div>
       )}
 
-      <button className="submit-btn" onClick={simulate} style={{ marginBottom: '12px', background: '#555' }}>
-        Simulate Scan
+      {/* Scan result */}
+      {scanResult && !scanLoading && (
+        <div style={{ background: '#e8f5e9', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
+          <div style={{ fontSize: '13px', fontWeight: '700', color: '#2d6a2d', marginBottom: '6px' }}>✅ Product detected!</div>
+          {scanResult.productName && <div style={{ fontSize: '13px', color: '#444' }}>📦 <strong>Name:</strong> {scanResult.productName}</div>}
+          {scanResult.expiryDate && <div style={{ fontSize: '13px', color: '#444', marginTop: '4px' }}>📅 <strong>Expiry:</strong> {scanResult.expiryDate}</div>}
+          {scanResult.barcode && <div style={{ fontSize: '13px', color: '#444', marginTop: '4px' }}>🔢 <strong>Barcode:</strong> {scanResult.barcode}</div>}
+        </div>
+      )}
+
+      {/* Camera input */}
+      <input id="cameraInput" type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleCapture} />
+      <button className="submit-btn" onClick={() => { setScanPreview(null); setScanResult(null); document.getElementById('cameraInput').click(); }} style={{ marginBottom: '8px' }}>
+        📷 Open Camera
       </button>
 
       <div style={{ textAlign: 'center', fontSize: '13px', color: '#888', marginBottom: '16px' }}>— or add manually —</div>
