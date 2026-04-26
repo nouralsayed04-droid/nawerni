@@ -642,6 +642,8 @@ export default function Dashboard({ username, onLogout }) {
                     });
                     const data = await res.json();
                     setScanResult(data);
+if (data.productName) setNewItem(prev => ({ ...prev, name: data.productName }));
+if (data.expiryDate) setNewItem(prev => ({ ...prev, expiry: data.expiryDate }));
                   } catch {
                     setScanResult({ productName: "", expiryDate: "", barcode: "" });
                   }
