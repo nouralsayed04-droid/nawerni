@@ -1,6 +1,3 @@
-
-
-
 import { useState, useEffect, useRef } from "react";
 
 const TABS = ["Dashboard", "Inventory", "Scan", "Donate", "Allergy", "Analytics"];
@@ -133,13 +130,13 @@ const TRANSLATIONS = {
 const COMMON_ALLERGIES = ["Peanuts", "Tree nuts", "Milk", "Eggs", "Wheat", "Soy", "Fish", "Shellfish", "Sesame", "Gluten"];
 
 const DONATION_CENTERS = [
-  { name: "Saudi Food Bank", nameAr: "بنك الطعام السعودي", city: "Riyadh", lat: 24.7136, lng: 46.6753 },
-  { name: "King Salman Humanitarian Aid", nameAr: "مركز الملك سلمان للإغاثة", city: "Riyadh", lat: 24.6877, lng: 46.7219 },
-  { name: "Ehsan Charity Platform", nameAr: "منصة إحسان الخيرية", city: "Riyadh", lat: 24.7241, lng: 46.6916 },
-  { name: "Al-Birr Society", nameAr: "جمعية البر", city: "Jeddah", lat: 21.4858, lng: 39.1925 },
-  { name: "Manahil Charity", nameAr: "جمعية منابع الخيرية", city: "Dammam", lat: 26.4207, lng: 50.0888 },
-  { name: "Riyadh Food Bank", nameAr: "بنك طعام الرياض", city: "Riyadh", lat: 24.6541, lng: 46.7198 },
-  { name: "Jeddah Charity Center", nameAr: "مركز جدة الخيري", city: "Jeddah", lat: 21.5433, lng: 39.1728 },
+  { name: "Saudi Food Bank", nameAr: "بنك الطعام السعودي", city: "Riyadh", lat: 24.7136, lng: 46.6753, phone: "966920008110" },
+  { name: "King Salman Humanitarian Aid", nameAr: "مركز الملك سلمان للإغاثة", city: "Riyadh", lat: 24.6877, lng: 46.7219, phone: "966920000052" },
+  { name: "Ehsan Charity Platform", nameAr: "منصة إحسان الخيرية", city: "Riyadh", lat: 24.7241, lng: 46.6916, phone: "9668001247000" },
+  { name: "Al-Birr Society", nameAr: "جمعية البر", city: "Jeddah", lat: 21.4858, lng: 39.1925, phone: "966164210122" },
+  { name: "Manahil Charity", nameAr: "جمعية منابع الخيرية", city: "Dammam", lat: 26.4207, lng: 50.0888, phone: "966920008110" },
+  { name: "Riyadh Food Bank", nameAr: "بنك طعام الرياض", city: "Riyadh", lat: 24.6541, lng: 46.7198, phone: "966920008110" },
+  { name: "Jeddah Charity Center", nameAr: "مركز جدة الخيري", city: "Jeddah", lat: 21.5433, lng: 39.1728, phone: "966164210122" },
 ];
 
 function getDaysUntilExpiry(expiryDate) {
@@ -196,7 +193,6 @@ export default function Dashboard({ username, onLogout }) {
   const [lang, setLang] = useState("en");
   const [activeTab, setActiveTab] = useState("Dashboard");
 
-  // ✅ FIX 1: Safe localStorage reads with try/catch
   const [items, setItems] = useState(() => {
     try {
       const saved = localStorage.getItem("nawerni_items");
@@ -205,7 +201,6 @@ export default function Dashboard({ username, onLogout }) {
     } catch { return []; }
   });
 
-  // ✅ FIX 2: Safe localStorage reads with try/catch
   const [allergies, setAllergies] = useState(() => {
     try {
       const saved = localStorage.getItem("nawerni_allergies");
@@ -219,6 +214,11 @@ export default function Dashboard({ username, onLogout }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [newItem, setNewItem] = useState({ name: "", category: "Food", expiry: "" });
   const [vw, setVw] = useState(window.innerWidth);
+
+  // ✅ Scan state variables
+  const [scanResult, setScanResult] = useState(null);
+  const [scanPreview, setScanPreview] = useState(null);
+  const [scanLoading, setScanLoading] = useState(false);
 
   const [aiSuggestions, setAiSuggestions] = useState({});
   const [aiLoading, setAiLoading] = useState({});
@@ -571,22 +571,100 @@ export default function Dashboard({ username, onLogout }) {
         {activeTab === "Scan" && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "10px" }}>
             <h2 style={{ fontSize: isSmall ? "17px" : "20px", fontWeight: "700", color: "#3a5535", marginBottom: "16px", alignSelf: "flex-start" }}>{t.scanItem}</h2>
+
+            {/* Preview */}
             <div style={{ width: "100%", background: "#222", borderRadius: "16px", height: isSmall ? "160px" : "220px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: "16px", left: "16px", width: "40px", height: "40px", borderTop: "3px solid #e8b820", borderLeft: "3px solid #e8b820", borderRadius: "4px 0 0 0" }} />
-              <div style={{ position: "absolute", top: "16px", right: "16px", width: "40px", height: "40px", borderTop: "3px solid #e8b820", borderRight: "3px solid #e8b820", borderRadius: "0 4px 0 0" }} />
-              <div style={{ position: "absolute", bottom: "16px", left: "16px", width: "40px", height: "40px", borderBottom: "3px solid #e8b820", borderLeft: "3px solid #e8b820", borderRadius: "0 0 0 4px" }} />
-              <div style={{ position: "absolute", bottom: "16px", right: "16px", width: "40px", height: "40px", borderBottom: "3px solid #e8b820", borderRight: "3px solid #e8b820", borderRadius: "0 0 4px 0" }} />
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <span style={{ fontSize: "48px" }}>📷</span>
-                <p style={{ color: "#fff", fontSize: "13px", marginTop: "12px", textAlign: "center", padding: "0 20px" }}>{t.scanNotice}</p>
-              </div>
+              {scanPreview ? (
+                <img src={scanPreview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "16px" }} />
+              ) : (
+                <>
+                  <div style={{ position: "absolute", top: "16px", left: "16px", width: "40px", height: "40px", borderTop: "3px solid #e8b820", borderLeft: "3px solid #e8b820", borderRadius: "4px 0 0 0" }} />
+                  <div style={{ position: "absolute", top: "16px", right: "16px", width: "40px", height: "40px", borderTop: "3px solid #e8b820", borderRight: "3px solid #e8b820", borderRadius: "0 4px 0 0" }} />
+                  <div style={{ position: "absolute", bottom: "16px", left: "16px", width: "40px", height: "40px", borderBottom: "3px solid #e8b820", borderLeft: "3px solid #e8b820", borderRadius: "0 0 0 4px" }} />
+                  <div style={{ position: "absolute", bottom: "16px", right: "16px", width: "40px", height: "40px", borderBottom: "3px solid #e8b820", borderRight: "3px solid #e8b820", borderRadius: "0 0 4px 0" }} />
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <span style={{ fontSize: "48px" }}>📷</span>
+                    <p style={{ color: "#fff", fontSize: "13px", marginTop: "12px", textAlign: "center", padding: "0 20px" }}>{t.scanNotice}</p>
+                  </div>
+                </>
+              )}
             </div>
-            <input id="cameraInput" type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={(e) => { if (e.target.files && e.target.files[0]) { setShowAddModal(true); e.target.value = ""; } }} />
-            <button style={{ background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "12px 28px", cursor: "pointer", fontSize: "15px", fontWeight: "700", marginBottom: "12px", width: "100%" }} onClick={() => document.getElementById("cameraInput").click()}>
+
+            {/* Scanning status */}
+            {scanLoading && (
+              <div style={{ background: "#e8f5e9", borderRadius: "10px", padding: "12px 16px", marginBottom: "12px", width: "100%", textAlign: "center", fontSize: "14px", color: "#2d6a2d", fontWeight: "600" }}>
+                🤖 Reading product info...
+              </div>
+            )}
+
+            {/* Scanned result */}
+            {scanResult && !scanLoading && (
+              <div style={{ background: "#e8f5e9", borderRadius: "12px", padding: "14px", marginBottom: "12px", width: "100%", boxSizing: "border-box" }}>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "#2d6a2d", marginBottom: "8px" }}>✅ Product detected!</div>
+                {scanResult.productName && <div style={{ fontSize: "13px", color: "#444" }}>📦 <strong>Name:</strong> {scanResult.productName}</div>}
+                {scanResult.expiryDate && <div style={{ fontSize: "13px", color: "#444", marginTop: "4px" }}>📅 <strong>Expiry:</strong> {scanResult.expiryDate}</div>}
+                {scanResult.barcode && <div style={{ fontSize: "13px", color: "#444", marginTop: "4px" }}>🔢 <strong>Barcode:</strong> {scanResult.barcode}</div>}
+                <button
+                  style={{ marginTop: "12px", width: "100%", background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "10px", cursor: "pointer", fontSize: "14px", fontWeight: "700" }}
+                  onClick={() => {
+                    setNewItem({ name: scanResult.productName || "", category: "Food", expiry: scanResult.expiryDate || "" });
+                    setScanResult(null);
+                    setScanPreview(null);
+                    setShowAddModal(true);
+                  }}
+                >
+                  ➕ Add to Inventory
+                </button>
+              </div>
+            )}
+
+            <input
+              id="cameraInput"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                  const base64Full = ev.target.result;
+                  setScanPreview(base64Full);
+                  const base64Data = base64Full.split(",")[1];
+                  const mediaType = file.type || "image/jpeg";
+                  setScanLoading(true);
+                  setScanResult(null);
+                  try {
+                    const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3001";
+                    const res = await fetch(`${apiBase}/api/scan`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ imageBase64: base64Data, mediaType })
+                    });
+                    const data = await res.json();
+                    setScanResult(data);
+                  } catch {
+                    setScanResult({ productName: "", expiryDate: "", barcode: "" });
+                  }
+                  setScanLoading(false);
+                };
+                reader.readAsDataURL(file);
+                e.target.value = "";
+              }}
+            />
+
+            <button
+              style={{ background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "12px 28px", cursor: "pointer", fontSize: "15px", fontWeight: "700", marginBottom: "12px", width: "100%" }}
+              onClick={() => { setScanResult(null); setScanPreview(null); document.getElementById("cameraInput").click(); }}
+            >
               {t.scanBtn}
             </button>
             <div style={{ color: "#aaa", fontSize: "13px", margin: "8px 0 12px" }}>— {t.scanManual} —</div>
-            <button style={{ background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px", cursor: "pointer", fontSize: "14px", fontWeight: "600", width: "100%" }} onClick={() => setShowAddModal(true)}>
+            <button
+              style={{ background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px", cursor: "pointer", fontSize: "14px", fontWeight: "600", width: "100%" }}
+              onClick={() => setShowAddModal(true)}
+            >
               + {t.addItem}
             </button>
           </div>
@@ -597,35 +675,21 @@ export default function Dashboard({ username, onLogout }) {
           <div>
             <h2 style={{ fontSize: isSmall ? "17px" : "20px", fontWeight: "700", color: "#3a5535", marginBottom: "14px" }}>{t.donationCenters}</h2>
             <div style={{ background: "#fff", borderRadius: "14px", padding: "14px", marginBottom: "14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <button
-                style={{ width: "100%", background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "11px", cursor: "pointer", fontSize: "14px", fontWeight: "600", marginBottom: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                onClick={detectLocation}
-                disabled={detectingLocation}
-              >
+              <button style={{ width: "100%", background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "11px", cursor: "pointer", fontSize: "14px", fontWeight: "600", marginBottom: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }} onClick={detectLocation} disabled={detectingLocation}>
                 {detectingLocation ? `⏳ ${t.detectingLocation}` : `📍 ${t.detectLocation}`}
               </button>
               {locationError && <div style={{ fontSize: "12px", color: "#c0392b", marginBottom: "8px", textAlign: "center" }}>{locationError}</div>}
               {userLocation && <div style={{ fontSize: "12px", color: "#2d6a2d", marginBottom: "8px", textAlign: "center" }}>✅ {t.nearestCenter}</div>}
-              <input
-                type="text"
-                value={citySearch}
-                onChange={(e) => setCitySearch(e.target.value)}
-                placeholder={t.searchCity}
-                style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #d0d0cc", borderRadius: "10px", fontSize: "14px", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
-              />
+              <input type="text" value={citySearch} onChange={(e) => setCitySearch(e.target.value)} placeholder={t.searchCity} style={{ width: "100%", padding: "10px 14px", border: "1.5px solid #d0d0cc", borderRadius: "10px", fontSize: "14px", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
             </div>
             {filteredCenters.map((center, i) => {
-              const dist = userLocation
-                ? getDistanceKm(userLocation.lat, userLocation.lng, center.lat, center.lng).toFixed(1)
-                : null;
+              const dist = userLocation ? getDistanceKm(userLocation.lat, userLocation.lng, center.lat, center.lng).toFixed(1) : null;
               return (
                 <div key={i} style={{ background: "#fff", borderRadius: "14px", padding: "16px", marginBottom: "10px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", borderLeft: i === 0 && userLocation ? "4px solid #3a5535" : "none" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "10px" }}>
                     <div>
                       {i === 0 && userLocation && (
-                        <div style={{ fontSize: "11px", background: "#e8f5e9", color: "#2d6a2d", borderRadius: "6px", padding: "2px 8px", marginBottom: "6px", display: "inline-block", fontWeight: "600" }}>
-                          ⭐ {t.nearestCenter}
-                        </div>
+                        <div style={{ fontSize: "11px", background: "#e8f5e9", color: "#2d6a2d", borderRadius: "6px", padding: "2px 8px", marginBottom: "6px", display: "inline-block", fontWeight: "600" }}>⭐ {t.nearestCenter}</div>
                       )}
                       <div style={{ fontSize: "14px", fontWeight: "700", color: "#1e2d1a", marginBottom: "4px" }}>{lang === "ar" ? center.nameAr : center.name}</div>
                       <div style={{ fontSize: "12px", color: "#888", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -633,9 +697,19 @@ export default function Dashboard({ username, onLogout }) {
                         {dist && <span style={{ color: "#3a5535", fontWeight: "600" }}>· {dist} {t.km}</span>}
                       </div>
                     </div>
-                    <button style={{ background: "#e8f5e9", color: "#2d6a2d", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }} onClick={() => openMaps(center.lat, center.lng, center.name)}>
-                      🗺 {t.openMaps}
-                    </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
+                      <button style={{ background: "#e8f5e9", color: "#2d6a2d", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }} onClick={() => openMaps(center.lat, center.lng, center.name)}>
+                        🗺 {t.openMaps}
+                      </button>
+                      <button style={{ background: "#25D366", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }}
+                        onClick={() => { const msg = encodeURIComponent(`Hello, I would like to donate some items to ${center.name}. Could you please let me know what you currently accept and how many items I can bring?`); window.open(`https://wa.me/${center.phone}?text=${msg}`, "_blank"); }}>
+                        💬 WhatsApp
+                      </button>
+                      <button style={{ background: "#4a6741", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" }}
+                        onClick={() => { window.location.href = `tel:+${center.phone}`; }}>
+                        📞 Call
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -650,17 +724,8 @@ export default function Dashboard({ username, onLogout }) {
             <p style={{ fontSize: "13px", color: "#888", marginBottom: "18px", lineHeight: "1.6" }}>{t.allergySubtitle}</p>
             <div style={{ background: "#fff", borderRadius: "14px", padding: "16px", marginBottom: "14px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
               <div style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type="text"
-                  value={allergyInput}
-                  onChange={(e) => setAllergyInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addAllergy()}
-                  placeholder={t.allergyPlaceholder}
-                  style={{ flex: 1, padding: "10px 14px", border: "1.5px solid #d0d0cc", borderRadius: "10px", fontSize: "14px", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
-                />
-                <button onClick={addAllergy} style={{ background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px", cursor: "pointer", fontSize: "14px", fontWeight: "600", whiteSpace: "nowrap", fontFamily: "inherit" }}>
-                  + {t.addAllergy}
-                </button>
+                <input type="text" value={allergyInput} onChange={(e) => setAllergyInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addAllergy()} placeholder={t.allergyPlaceholder} style={{ flex: 1, padding: "10px 14px", border: "1.5px solid #d0d0cc", borderRadius: "10px", fontSize: "14px", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                <button onClick={addAllergy} style={{ background: "#3a5535", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 16px", cursor: "pointer", fontSize: "14px", fontWeight: "600", whiteSpace: "nowrap", fontFamily: "inherit" }}>+ {t.addAllergy}</button>
               </div>
               <div style={{ marginTop: "14px" }}>
                 <div style={{ fontSize: "12px", color: "#aaa", marginBottom: "8px" }}>{t.commonAllergies}</div>
