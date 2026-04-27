@@ -179,7 +179,7 @@ async function fetchAISuggestion(item, daysLeft, lang, allergies) {
     ? `لدي منتج "${item.name}" من فئة "${item.category}" وسينتهي خلال ${daysLeft} يوم. أعطني نصيحة قصيرة ومفيدة جداً (جملتين فقط) حول كيفية استخدامه أو التبرع به قبل انتهاء صلاحيته.${allergyNote}`
     : `I have a "${item.name}" (${item.category}) expiring in ${daysLeft} days. Give me a very short, practical tip (2 sentences max) on how to use it or donate it before it expires.${allergyNote}`;
 
- const response = await fetch(`/api/ai-suggestion`, {
+ const response = await fetch(`https://nawerni-production.up.railway.app/api/ai-suggestion`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt }),
@@ -635,7 +635,7 @@ export default function Dashboard({ username, onLogout }) {
                   setScanLoading(true);
                   setScanResult(null);
                   try {
-                    const res = await fetch(`/api/scan`, {
+                  const res = await fetch(`https://nawerni-production.up.railway.app/api/scan`, {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ imageBase64: base64Data, mediaType })

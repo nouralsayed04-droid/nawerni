@@ -24,7 +24,7 @@ export default function Scanner({ addItem, setPage }) {
       setScanResult(null);
 
       try {
-        const apiBase = import.meta.env.VITE_API_URL || "http://localhost:3001";
+       const apiBase = "https://nawerni-production.up.railway.app";
         const res = await fetch(`${apiBase}/api/scan`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
