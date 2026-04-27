@@ -5,15 +5,13 @@ dotenv.config();
 
 const app = express();
 
-app.options("*", cors({ origin: "https://nawerni.vercel.app" }));
 app.use(cors({ origin: "https://nawerni.vercel.app" }));
-app.use(express.json({ limit: "10mb" })); // ✅ increased limit for images
+app.use(express.json({ limit: "10mb" }));
 
 app.post("/api/ai-suggestion", async (req, res) => {
   const { prompt } = req.body;
   console.log("📥 Received prompt:", prompt);
   console.log("🔑 API Key loaded:", process.env.ANTHROPIC_API_KEY ? "YES" : "NO");
-
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -28,7 +26,6 @@ app.post("/api/ai-suggestion", async (req, res) => {
         messages: [{ role: "user", content: prompt }]
       })
     });
-
     const data = await response.json();
     res.json({ suggestion: data.content?.[0]?.text || "No suggestion available." });
   } catch (err) {
@@ -37,10 +34,8 @@ app.post("/api/ai-suggestion", async (req, res) => {
   }
 });
 
-// ✅ NEW: Scan endpoint for reading product images
 app.post("/api/scan", async (req, res) => {
   const { imageBase64, mediaType } = req.body;
-
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -79,7 +74,6 @@ If you cannot find any information, use empty strings. Only return the JSON obje
         ]
       })
     });
-
     const data = await response.json();
     const text = data.content?.[0]?.text || "{}";
     const clean = text.replace(/```json|```/g, "").trim();
